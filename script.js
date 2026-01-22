@@ -1,7 +1,5 @@
-const SUPABASE_URL = "https://fyszboprvxwhuqerbbvm.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5c3pib3Bydnh3aHVxZXJiYnZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1NTAxMDksImV4cCI6MjA4MjEyNjEwOX0.GuarGflKFG-QURlVc_SSp_D55j_y-9rIHEOqlMYtfj4";
-
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Keys are now loaded from config.js
+const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 
 // State Management
 let currentTab = 'home';

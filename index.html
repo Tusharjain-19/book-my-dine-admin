@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Dashboard - Book My Dine</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <img src="logo_withoutbackground.png" alt="Logo" class="login-logo">
+            <h2>Admin Login</h2>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required placeholder="admin@bookmydine.com">
+                </div>
+                <div class="input-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+            <p id="login-error" class="error-text"></p>
+        </div>
+    </div>
+
+    <!-- MAIN ADMIN INTERFACE -->
+    <div id="admin-interface" style="display: none;">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="logo_withoutbackground.png" alt="Logo" class="sidebar-logo">
+                <h2>Book My Dine</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="home">
+                    <span class="icon"><img src="./home.png"></span> Home
+                </button>
+                <button class="nav-item" data-tab="daily-sales">
+                    <span class="icon"><img src="./money.png"></span> Daily Sales
+                </button>
+                <button class="nav-item" data-tab="orders">
+                    <span class="icon"><img src="./order.png"></span> Orders
+                </button>
+                <button class="nav-item" data-tab="customers">
+                    <span class="icon"><img src="./contact-book.png"></span> Customers
+                </button>
+                <button class="nav-item" data-tab="monthly">
+                    <span class="icon"><img src="./report.png"></span> Monthly Report
+                </button>
+                <button class="nav-item" data-tab="yearly">
+                    <span class="icon"><img src="./report.png"></span> Yearly Report
+                </button>
+                <button class="nav-item" data-tab="waiter-status">
+                    <span class="icon"><img src="./team.png"></span> Waiter Status
+                </button>
+                <button class="nav-item" data-tab="menu">
+                    <span class="icon"><img src="./menu.png"></span> Menu
+                </button>
+                <button class="nav-item" data-tab="settings">
+                    <span class="icon"><img src="./settings.png"></span> Settings
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="admin-logout" class="logout-btn">
+                    <span class="icon"><img src="./logout.png"></span> Logout
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="content-header">
+                <h1 id="tab-title">Dashboard</h1>
+                <div class="user-info">
+                    <span id="admin-name">Admin</span>
+                    <div class="status-indicator online"></div>
+                </div>
+            </header>
+
+            <div id="tab-content">
+                <!-- HOME TAB -->
+                <section id="home-tab" class="tab-section active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Today's Sales</span>
+                                <h3 id="dash-sales">₹0</h3>
+                            </div>
+                            <div class="stat-icon sales-icon"><img src="./increase.png"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Total Orders</span>
+                                <h3 id="dash-orders">0</h3>
+                            </div>
+                            <div class="stat-icon orders-icon"><img src="./package.png"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Tax Collected</span>
+                                <h3 id="dash-tax">₹0</h3>
+                            </div>
+                            <div class="stat-icon tax-icon"><img src="./taxes.png"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Active Tables</span>
+                                <h3 id="dash-tables">0</h3>
+                            </div>
+                            <div class="stat-icon tables-icon"><img src="./chair.png"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Waiters Online</span>
+                                <h3 id="dash-waiters">0</h3>
+                            </div>
+                            <div class="stat-icon waiters-icon"><img src="./wireless-symbol.png"></div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-charts">
+                        <div class="chart-box">
+                            <h3>Hourly Sales Trend</h3>
+                            <canvas id="hourlySalesChart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h3>Recent Activity</h3>
+                            <div id="recent-activity-list" class="activity-list">
+                                <!-- Live updates here -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ORDERS TAB -->
+                <section id="orders-tab" class="tab-section">
+                    <div class="toolbar">
+                        <div class="filters">
+                            <input type="date" id="order-date-filter">
+                            <select id="payment-filter">
+                                <option value="all">All Payments</option>
+                                <option value="Cash">Cash</option>
+                                <option value="UPI">UPI</option>
+                                <option value="Card">Card</option>
+                            </select>
+                            <select id="waiter-filter">
+                                <option value="all">All Waiters</option>
+                            </select>
+                            <input type="text" id="order-search" placeholder="Search Bill/Table/Waiter">
+                        </div>
+                        <div class="actions">
+                            <button id="export-excel" class="btn-secondary">Export Excel</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>Bill No.</th>
+                                    <th>Time</th>
+                                    <th>Table</th>
+                                    <th>Waiter</th>
+                                    <th>Mode</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-body">
+                                <!-- Orders injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- DAILY SALES TAB -->
+                <section id="daily-sales-tab" class="tab-section">
+                    <div class="stats-grid mini">
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Total Sales Today</span>
+                                <h3 id="daily-total-sales">₹0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Total Bills</span>
+                                <h3 id="daily-total-bills">0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Avg. Bill Value</span>
+                                <h3 id="daily-avg-bill">₹0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="dailySalesChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- CUSTOMERS TAB -->
+                <section id="customers-tab" class="tab-section">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Bill No</th>
+                                    <th>Date</th>
+                                    <th>Customer Name</th>
+                                    <th>Mobile</th>
+                                    <th>Email</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customers-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- MONTHLY REPORT TAB -->
+                <section id="monthly-tab" class="tab-section">
+                    <div class="report-header">
+                        <input type="month" id="monthly-month-picker">
+                    </div>
+                    <div class="stats-grid mini">
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Monthly Revenue</span>
+                                <h3 id="monthly-sales">₹0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Total Orders</span>
+                                <h3 id="monthly-bills">0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Tax Collected</span>
+                                <h3 id="monthly-tax">₹0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                    <div class="export-actions">
+                        <select id="monthly-export-type">
+                            <option value="basic">Basic Report (Sales only)</option>
+                            <option value="with">Full Report (With Customer Info)</option>
+                        </select>
+                        <button id="btn-export-monthly" class="btn-primary">Download Excel</button>
+                    </div>
+                </section>
+
+                <!-- YEARLY REPORT TAB -->
+                <section id="yearly-tab" class="tab-section">
+                    <div class="report-header">
+                        <select id="yearly-year-picker"></select>
+                    </div>
+                    <div class="stats-grid mini">
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Yearly Revenue</span>
+                                <h3 id="yearly-sales">₹0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Total Orders</span>
+                                <h3 id="yearly-bills">0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <span class="label">Tax Collected</span>
+                                <h3 id="yearly-tax">₹0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="yearlyChart"></canvas>
+                    </div>
+                    <div class="export-actions">
+                        <select id="yearly-export-type">
+                            <option value="basic">Basic Report</option>
+                            <option value="with">Full Report</option>
+                        </select>
+                        <button id="btn-export-yearly" class="btn-primary">Download Excel</button>
+                    </div>
+                </section>
+
+                <!-- WAITER STATUS TAB -->
+                <section id="waiter-status-tab" class="tab-section">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Current Table</th>
+                                    <th>Active Orders</th>
+                                    <th>Last Active</th>
+                                </tr>
+                            </thead>
+                            <tbody id="waiters-body">
+                                <!-- Waiters injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- MENU TAB -->
+                <section id="menu-tab" class="tab-section">
+                    <div class="toolbar">
+                        <button id="add-menu-item" class="btn-primary">+ Add New Item</button>
+                        <select id="menu-category-filter">
+                            <option value="all">All Categories</option>
+                        </select>
+                    </div>
+                    <div class="menu-grid" id="menu-container">
+                        <!-- Menu items injected here -->
+                    </div>
+                </section>
+
+                <!-- SETTINGS TAB -->
+                <section id="settings-tab" class="tab-section">
+                    <div class="settings-container">
+                        <form id="settings-form">
+                            <div class="form-group">
+                                <label>Restaurant Name</label>
+                                <input type="text" id="res-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Address</label>
+                                <textarea id="res-address" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>GSTIN</label>
+                                <input type="text" id="res-gstin">
+                            </div>
+                            <div class="form-group">
+                                <label>UPI ID (for bill printing)</label>
+                                <input type="text" id="res-upi">
+                            </div>
+                            <div class="form-group">
+                                <label>Default Tax Rate (%)</label>
+                                <input type="number" id="res-tax-rate" step="0.1">
+                            </div>
+                            <button type="submit" class="btn-primary">Save Settings</button>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- MODALS -->
+        <div id="order-details-modal" class="modal">
+            <div class="modal-content bill-modal">
+                <header>
+                    <h2>Order Details</h2>
+                    <span class="close-modal">&times;</span>
+                </header>
+                <div id="bill-details-content"></div>
+                <div class="modal-actions">
+                    <button class="btn-print">Print Bill</button>
+                    <button class="btn-download">Download PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="menu-modal" class="modal">
+            <div class="modal-content">
+                <header>
+                    <h2 id="menu-modal-title">Add Menu Item</h2>
+                    <span class="close-modal">&times;</span>
+                </header>
+                <form id="menu-form">
+                    <input type="hidden" id="menu-item-id">
+                    <div class="form-group">
+                        <label>Item Name</label>
+                        <input type="text" id="menu-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <input type="text" id="menu-category" required list="category-suggestions">
+                        <datalist id="category-suggestions"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Price (₹)</label>
+                        <input type="number" id="menu-price" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tax Rate (%)</label>
+                        <input type="number" id="menu-tax" value="5" required>
+                    </div>
+                    <div class="form-group checkbox">
+                        <input type="checkbox" id="menu-active" checked>
+                        <label for="menu-active">Active / Available</label>
+                    </div>
+                    <button type="submit" class="btn-save">Save Item</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- EXPORT LOADING OVERLAY -->
+        <div id="export-loading" class="loading-overlay" style="display: none;">
+            <div class="loader"></div>
+            <p>Generating Report...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

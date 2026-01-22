@@ -72,6 +72,19 @@ function setupAuth() {
             loginError.textContent = "Access denied. Admin only.";
         }
     };
+
+    
+    // Password Toggle Logic
+    const toggleBtn = document.getElementById('toggle-password');
+    const passwordInput = document.getElementById('login-password');
+    
+    if(toggleBtn && passwordInput) {
+        toggleBtn.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            toggleBtn.src = type === 'password' ? 'hide.png' : 'show.png';
+        });
+    }
 }
 
 function showLogin() {
